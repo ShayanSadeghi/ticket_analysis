@@ -1,0 +1,7 @@
+requests
+pandas
+clickhouse-driver
+PyYAML
+schedule
+python-dotenv
+jdatetime
