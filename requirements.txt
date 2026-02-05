@@ -1,0 +1,14 @@
+requests
+pandas
+clickhouse-driver
+PyYAML
+schedule
+python-dotenv
+jdatetime
+dbt-core
+dbt-clickhouse
+dbt-utils
+schedule
+dagster
+dagster-webserver
+ruff
