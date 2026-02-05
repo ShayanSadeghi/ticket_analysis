@@ -1,0 +1,28 @@
+version: 2
+
+sources:
+  - name: raw
+    database: ticket_pricing
+    # schema: flight_tickets
+    tables:
+      - name: flight_tickets_raw
+        description: "Raw flight ticket data"
+        loaded_at_field: timestamp
+        identifier: "flight_tickets_raw"  # Actual table name
+        freshness:
+          error_after: {count: 24, period: hour}
+          warn_after: {count: 12, period: hour}
+        columns:
+          - name: timestamp
+            description: "Timestamp of data scrape"
+            tests:
+              - not_null
+          - name: scrape_id
+            description: "Unique identifier for each scrape"
+            tests:
+              - unique
+              - not_null
+          - name: price
+            description: "Ticket price"
+            tests:
+              - not_null

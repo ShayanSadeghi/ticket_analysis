@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   clickhouse:
@@ -27,15 +26,20 @@ services:
     ports:
       - "3000:3000"
     environment:
+      - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_FEATURE_TOGGLES_ENABLE=publicDashboards
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
-      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+      - grafana_config:/etc/grafana
+      - ./provisioning:/etc/grafana/provisioning:ro
+      - ./grafana_plugins:/var/lib/grafana/plugins
     depends_on:
       - clickhouse
     networks:
       - pricing-network
+  
 
 networks:
   pricing-network:
@@ -44,3 +48,5 @@ networks:
 volumes:
   clickhouse_data:
   grafana_data:
+  grafana_config:
+
