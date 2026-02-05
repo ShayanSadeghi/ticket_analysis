@@ -30,6 +30,14 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_FEATURE_TOGGLES_ENABLE=publicDashboards
+      
+      - GF_SMTP_ENABLED=true
+      - GF_SMTP_HOST=smtp.gmail.com:587
+      - GF_SMTP_USER=$gmail_account
+      - GF_SMTP_PASSWORD=$google_app_password
+      - GF_SMTP_FROM_ADDRESS=$gmail_account
+      - GF_SMTP_FROM_NAME=Grafana Alerts
+      - GF_SMTP_SKIP_VERIFY=false
     volumes:
       - grafana_data:/var/lib/grafana
       - grafana_config:/etc/grafana
