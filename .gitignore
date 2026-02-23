@@ -1,6 +1,10 @@
 .venv/
+venv/
 logs/
 __pycache__
 .tmp*
 grafana_plugins/
 .env
+src/.*
+src/history
+src/schedules/

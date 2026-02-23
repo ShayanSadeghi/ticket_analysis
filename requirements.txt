@@ -7,8 +7,8 @@ python-dotenv
 jdatetime
 dbt-core
 dbt-clickhouse
-dbt-utils
 schedule
 dagster
 dagster-webserver
 ruff
+psycopg2-binary

@@ -48,7 +48,62 @@ services:
     networks:
       - pricing-network
   
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: dagster
+      POSTGRES_PASSWORD: dagster
+      POSTGRES_DB: dagster
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dagster"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  
+  # Dagster Daemon (Runs schedules, sensors, backfills)
+  dagster_daemon:
+    build: .
+    command: dagster-daemon run
+    environment:
+      - DAGSTER_HOME=/var/lib/dagster
+      - DAGSTER_POSTGRES_USER=dagster
+      - DAGSTER_POSTGRES_PASSWORD=dagster
+      - DAGSTER_POSTGRES_DB=dagster
+      - DAGSTER_POSTGRES_HOST=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - dagster_home:/var/lib/dagster
+      - ./dagster.yaml:/var/lib/dagster/dagster.yaml
+      - ./dbt_profiles.yml:/root/.dbt/profiles.yml
+    networks:
+      - pricing-network
 
+  # Dagster Webserver (The UI you access in browser)
+  dagster_webserver:
+    build: .
+    command: dagster-webserver -h 0.0.0.0 -p 3000
+    ports:
+      - "3030:3000"  # Maps container 3000 to your host 3030
+    environment:
+      - DAGSTER_HOME=/var/lib/dagster
+      - DAGSTER_POSTGRES_USER=dagster
+      - DAGSTER_POSTGRES_PASSWORD=dagster
+      - DAGSTER_POSTGRES_DB=dagster
+      - DAGSTER_POSTGRES_HOST=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dagster_daemon:
+        condition: service_started
+    volumes:
+      - dagster_home:/var/lib/dagster
+      - ./dagster.yaml:/var/lib/dagster/dagster.yaml
+      - ./dbt_profiles.yml:/root/.dbt/profiles.yml
+    
 networks:
   pricing-network:
     driver: bridge
@@ -57,4 +112,5 @@ volumes:
   clickhouse_data:
   grafana_data:
   grafana_config:
-
+  postgres_data:
+  dagster_home:
