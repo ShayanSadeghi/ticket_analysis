@@ -6,11 +6,17 @@ clickhouse:
   database: "ticket_pricing"
 
 routes:
-  - origin: "MHD"
-    destination: "THR"
-  - origin: "THR"
-    destination: "MHD"
-  
+  - origin:
+      name: "THR"
+      codes:
+          mrbilit_trains: 1
+    destination:
+      name: "MHD"
+      codes:
+        mrbilit_trains: 191
+    reverse: true
+
+
 departure_windows: [0, 1, 2, 3, 4, 5, 6, 7, 14, 30, 60, 90]  # days ahead
 
 collection:
@@ -20,6 +26,7 @@ collection:
 
 sources:
   mrbilit_flights:
+    vehicle: plane
     url: "https://flight.atighgasht.com/api/Flights"
     headers:
       Accept: "application/json, text/plain, */*"
@@ -45,3 +52,4 @@ sources:
       CabinClass: "All"
       Baggage: true
       IncludeFlightsWithHigherCapacity: false
+  
