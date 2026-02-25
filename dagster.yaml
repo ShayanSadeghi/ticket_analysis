@@ -1,0 +1,28 @@
+docker compose up --buildstorage:
+  postgres:
+    db:
+      username: dagster
+      password: dagster
+      hostname: postgres
+      port: 5432
+      db_name: dagster
+run_storage:
+  module: dagster_postgres.run_storage
+  class: PostgresRunStorage
+  config:
+    postgres_db:
+      username: dagster
+      password: dagster
+      hostname: postgres
+      port: 5432
+      db_name: dagster
+event_log_storage:
+  module: dagster_postgres.event_log
+  class: PostgresEventLogStorage
+  config:
+    postgres_db:
+      username: dagster
+      password: dagster
+      hostname: postgres
+      port: 5432
+      db_name: dagster

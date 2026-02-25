@@ -2,14 +2,13 @@ import logging
 import time
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 import requests
-import yaml
 from clickhouse_driver import Client
+from config import Config, TableConfig
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from config import Config, TableConfig
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -19,15 +18,15 @@ logger = logging.getLogger(__name__)
 class AirlinePricingCollector:
     def __init__(self, config_path: str = "config.yaml"):
         self.config = Config.from_yaml_with_env(config_path)
-        self.flight_config = TableConfig.from_yaml('./config_flight.yml')
+        self.flight_config = TableConfig.from_yaml("./config_flight.yml")
         self.session = self._create_session()
         self.ch_client = None  # Lazy initialization
-    
+
     def __enter__(self):
         self.ch_client = Client(**self.config.clickhouse.model_dump())
         self.create_tables()
         return self
-        
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.ch_client:
             self.ch_client.disconnect()
@@ -40,7 +39,7 @@ class AirlinePricingCollector:
             total=3,
             backoff_factor=0.3,
             status_forcelist=[429, 500, 502, 503, 504],
-            allowed_methods=["POST"]
+            allowed_methods=["POST"],
         )
         adapter = HTTPAdapter(max_retries=retry)
         session.mount("https://", adapter)
@@ -51,7 +50,9 @@ class AirlinePricingCollector:
         """Create necessary tables in ClickHouse"""
 
         # Raw data table
-        fields = ", ".join([f'{item.name} {item.field_type}' for item in self.flight_config.fields])
+        fields = ", ".join(
+            [f"{item.name} {item.field_type}" for item in self.flight_config.fields]
+        )
         order_by = ", ".join(self.flight_config.order_by)
         self.ch_client.execute(f"""
         CREATE TABLE IF NOT EXISTS {self.flight_config.table_name}
@@ -73,16 +74,16 @@ class AirlinePricingCollector:
 
         payload["Routes"] = [
             {
-                "OriginCode": route["origin"]['name'],
-                "DestinationCode": route["destination"]['name'],
+                "OriginCode": route["origin"]["name"],
+                "DestinationCode": route["destination"]["name"],
                 "DepartureDate": departure_date,
             }
         ]
-        
+
         response = self.session.post(url, headers=headers, json=payload, timeout=30)
         response.raise_for_status()
         response = response.json()["Flights"]
-        
+
         flights = []
         for res in response:
             segment = res[
@@ -95,8 +96,8 @@ class AirlinePricingCollector:
             flight_data_main = {
                 "timestamp": datetime.now(UTC),
                 "route_id": f"{route['origin']['name']}-{route['destination']['name']}",
-                "origin": route["origin"]['name'],
-                "destination": route["destination"]['name'],
+                "origin": route["origin"]["name"],
+                "destination": route["destination"]["name"],
                 "flight_id": res["Id"],
                 "score": res["Score"],
                 "journey_time": segment["TotalTime"],
@@ -114,14 +115,18 @@ class AirlinePricingCollector:
             }
             for flight_class in res["Prices"]:
                 adult_fare = next(
-                        (fare for fare in flight_class["PassengerFares"] if fare.get("PaxType") == "ADL"),
-                        None
-                    )
+                    (
+                        fare
+                        for fare in flight_class["PassengerFares"]
+                        if fare.get("PaxType") == "ADL"
+                    ),
+                    None,
+                )
                 if adult_fare:
                     price = adult_fare.get("TotalFare")
                     discount = adult_fare.get("Discount")
                     discount_percent = adult_fare.get("DiscountPercent")
-                
+
                 fligth_data = {
                     **flight_data_main,
                     "price": price,
@@ -129,13 +134,10 @@ class AirlinePricingCollector:
                     "discount_percent": discount_percent,
                     "available_seats": flight_class["Capacity"],
                     "booking_class": flight_class["BookingClass"],
-
-                    
                 }
                 flights.append(fligth_data)
 
         return flights
-
 
     def _batch_insert(self, flight_buffer: List[Dict[str, Any]]) -> None:
         if not flight_buffer:
@@ -145,10 +147,7 @@ class AirlinePricingCollector:
         columns_str = ", ".join(columns)
         query = f"INSERT INTO {self.flight_config.table_name} ({columns_str}) VALUES"
 
-        values = [
-            tuple(flight.get(col) for col in columns)
-            for flight in flight_buffer
-        ]
+        values = [tuple(flight.get(col) for col in columns) for flight in flight_buffer]
 
         try:
             self.ch_client.execute(query, values)
@@ -172,22 +171,23 @@ class AirlinePricingCollector:
                 try:
                     flights = self.fetch_from_api(route, departure_date)
                     # Fetch data from API
-                    if route['reverse']:
-                        route_rev = {'origin': route['destination'], 'destination': route['origin']}
+                    if route["reverse"]:
+                        route_rev = {
+                            "origin": route["destination"],
+                            "destination": route["origin"],
+                        }
                         flights.extend(self.fetch_from_api(route_rev, departure_date))
-                    
-                    
+
                     # Insert into ClickHouse
                     for flight in flights:
-                        flight['scrape_id'] = scrape_id
+                        flight["scrape_id"] = scrape_id
                         flights_buffer.append(flight)
-                    
+
                     if len(flights_buffer) >= batch_size:
                         self._batch_insert(flights_buffer)
                         flights_buffer.clear()
-                    
-                    time.sleep(self.config.rate_limit_delay)
 
+                    time.sleep(self.config.rate_limit_delay)
 
                     logger.info(
                         f"Collected data for {route['origin']['name']}-{route['destination']['name']} on {departure_date}"
@@ -197,15 +197,16 @@ class AirlinePricingCollector:
                     time.sleep(self.config.rate_limit_delay)
 
                 except Exception as e:
-                    logger.error(f"Error collecting data for route {route['origin']['name']}-{route['destination']['name']}: {e}")
-            
+                    logger.error(
+                        f"Error collecting data for route {route['origin']['name']}-{route['destination']['name']}: {e}"
+                    )
+
         if flights_buffer:
             self._batch_insert(flights_buffer)
-            
+
         logger.info(f"Data collection complete. Scrape ID: {scrape_id}")
 
 
 if __name__ == "__main__":
     with AirlinePricingCollector() as collector:
         collector.collect_data()
-    

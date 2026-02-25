@@ -10,7 +10,7 @@ from dagster import (
     op,
     Definitions,
 )
-from src.data_collector.scraper import AirlinePricingCollector
+from src.data_collector.scraper import AirlinePricingCollector, TrainPricingCollector
 
 dagster_logger = get_dagster_logger()
 
@@ -30,8 +30,10 @@ def run_scraper(context: OpExecutionContext) -> bool:
     context.log.info(f"Loading config from: {config_path.absolute()}")
     context.log.info(f"Config exists: {config_path.exists()}")
     
-    collector = AirlinePricingCollector(config_path=str(config_path))
-    collector.collect_data()
+    # collector = AirlinePricingCollector(config_path=str(config_path))
+    # collector.collect_data()
+    with TrainPricingCollector() as collector:
+        collector.collect_data()
     
     context.log.info("Scraper completed successfully")
     return True
@@ -68,7 +70,7 @@ def scraper_pipeline():
 
 scraper_schedule = ScheduleDefinition(
     job=scraper_pipeline,
-    cron_schedule="*/15 * * * *",
+    cron_schedule="*/5 * * * *",
     default_status=DefaultScheduleStatus.RUNNING,
     execution_timezone="UTC",
 )

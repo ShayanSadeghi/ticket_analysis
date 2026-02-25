@@ -9,7 +9,7 @@ routes:
   - origin:
       name: "THR"
       codes:
-          mrbilit_trains: 1
+        mrbilit_trains: 1
     destination:
       name: "MHD"
       codes:
@@ -53,3 +53,22 @@ sources:
       Baggage: true
       IncludeFlightsWithHigherCapacity: false
   
+  mrbilit_trains:
+    vehicle: train
+    url: https://train.mrbilit.com/api/GetAvailable/v2?from={origin}&to={destination}&date={date}&genderCode=3&adultCount=1&childCount=0&infantCount=0&exclusive=false&availableStatus=Both
+    headers:
+      accept: 'application/json, text/plain, */*'
+      accept-language: 'en-GB,en-US;q=0.9,en;q=0.8'
+      # authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJidXMiOiI0ZiIsInRybiI6IjE3Iiwic3JjIjoiMiJ9.vvpr9fgASvk7B7I4KQKCz-SaCmoErab_p3csIvULG1w'
+      origin: 'https://mrbilit.com'
+      priority: 'u=1, i'
+      referer: 'https://mrbilit.com/'
+      sec-ch-ua: '"Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"'
+      sec-ch-ua-mobile: '?0'
+      sec-ch-ua-platform: '"Linux"'
+      sec-fetch-dest: 'empty'
+      sec-fetch-mode: 'cors'
+      sec-fetch-site: 'same-site'
+      sessionid: 'session_0e5b2ecc-5ace-4bec-928d-3f33f51c6bbf'
+      user-agent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36'
+      x-playerid: 'ccd3545f-0a66-4574-a184-ffc1f82ec8f'

@@ -77,7 +77,7 @@ services:
         condition: service_healthy
     volumes:
       - dagster_home:/var/lib/dagster
-      - ./dagster.yaml:/var/lib/dagster/dagster.yaml
+      # - ./dagster.yaml:/var/lib/dagster/dagster.yaml
       - ./dbt_profiles.yml:/root/.dbt/profiles.yml
     networks:
       - pricing-network
@@ -101,7 +101,7 @@ services:
         condition: service_started
     volumes:
       - dagster_home:/var/lib/dagster
-      - ./dagster.yaml:/var/lib/dagster/dagster.yaml
+      # - ./dagster.yaml:/var/lib/dagster/dagster.yaml
       - ./dbt_profiles.yml:/root/.dbt/profiles.yml
     
 networks:
